@@ -465,7 +465,17 @@ function App() {
   const renderShoppingList = () => (
     <div className="space-y-6 pb-32">
       <div className="mx-4">
-        <h2 className="text-2xl font-bold mb-6">Shopping List</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Shopping List</h2>
+          {!selectedMealPlan && (
+            <button
+              onClick={() => setActiveMenu('meal-planner')}
+              className="bg-teal-500 text-white px-4 py-2 rounded-xl text-sm font-medium"
+            >
+              Create List
+            </button>
+          )}
+        </div>
         
         {selectedMealPlan ? (
           <div className="space-y-4">
@@ -496,18 +506,83 @@ function App() {
                 </div>
               </div>
             </div>
+            
+            {/* Nutritional Summary */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Plan Summary</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-xl">
+                  <p className="text-xl font-bold text-blue-600">{selectedMealPlan.macros.calories}</p>
+                  <p className="text-sm text-gray-600">Daily Calories</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-xl">
+                  <p className="text-xl font-bold text-green-600">{selectedMealPlan.macros.protein}g</p>
+                  <p className="text-sm text-gray-600">Protein</p>
+                </div>
+                <div className="text-center p-3 bg-orange-50 rounded-xl">
+                  <p className="text-xl font-bold text-orange-600">{selectedMealPlan.macros.carbs}g</p>
+                  <p className="text-sm text-gray-600">Carbs</p>
+                </div>
+                <div className="text-center p-3 bg-purple-50 rounded-xl">
+                  <p className="text-xl font-bold text-purple-600">{selectedMealPlan.macros.fat}g</p>
+                  <p className="text-sm text-gray-600">Fat</p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Shopping List</h3>
-            <p className="text-gray-600 mb-6">Create a meal plan first to generate your shopping list</p>
-            <button
-              onClick={() => setActiveMenu('meal-planner')}
-              className="bg-teal-500 text-white px-6 py-3 rounded-xl font-semibold"
-            >
-              Create Meal Plan
-            </button>
+          <div className="space-y-4">
+            {/* Quick Shopping List Creator */}
+            <div className="bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl p-6 text-white">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-2">Smart Shopping Lists</h3>
+                  <p className="text-teal-100 text-sm mb-4">Generate personalized shopping lists based on your meal plans and macro goals</p>
+                </div>
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center ml-4">
+                  <ShoppingCart className="w-8 h-8" />
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveMenu('meal-planner')}
+                className="w-full bg-white text-teal-600 py-4 rounded-xl font-semibold hover:bg-teal-50 transition-colors flex items-center justify-center gap-2 text-lg"
+              >
+                <ChefHat className="w-5 h-5" />
+                Create Shopping List
+              </button>
+            </div>
+
+            {/* Manual Shopping List */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Manual Shopping List</h3>
+              <p className="text-gray-600 mb-4">Create a custom shopping list without a meal plan</p>
+              
+              <div className="space-y-3 mb-4">
+                <input 
+                  type="text" 
+                  placeholder="Add item (e.g., Chicken breast 2lbs)"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+                <button className="w-full bg-teal-500 text-white py-3 rounded-xl font-semibold">
+                  Add Item
+                </button>
+              </div>
+              
+              {/* Sample items */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 mb-2">Quick Add:</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Eggs', 'Milk', 'Bread', 'Bananas', 'Chicken', 'Rice'].map(item => (
+                    <button 
+                      key={item}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
+                    >
+                      + {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
