@@ -909,8 +909,8 @@ function App() {
             { id: 'dashboard', icon: Home, label: 'Home' },
             { id: 'meals', icon: UtensilsCrossed, label: 'Meals' },
             { id: 'exercise', icon: Dumbbell, label: 'Exercise' },
-            { id: 'food-input', icon: Plus, label: 'Add Food' },
             { id: 'shopping', icon: ShoppingCart, label: 'Shopping' },
+            { id: 'food-input', icon: Plus, label: 'Add Food' },
           ].map((item) => {
             const IconComponent = item.icon;
             return (
