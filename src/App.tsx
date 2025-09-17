@@ -602,6 +602,7 @@ function App() {
       case 'dashboard': return renderDashboard();
       case 'profile': return renderProfile();
       case 'meals': return renderMeals();
+      case 'exercise': return renderExercise();
       case 'shopping': return renderShopping();
       default: return renderDashboard();
     }
@@ -680,6 +681,7 @@ function App() {
           {[
             { id: 'dashboard', icon: Home, label: 'Home' },
             { id: 'meals', icon: UtensilsCrossed, label: 'Meals' },
+            { id: 'exercise', icon: Dumbbell, label: 'Exercise' },
             { id: 'exercise', icon: Dumbbell, label: 'Exercise' },
             { id: 'food-input', icon: Plus, label: 'Add Food' },
             { id: 'shopping', icon: ShoppingCart, label: 'Shopping' }
