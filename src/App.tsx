@@ -44,11 +44,33 @@ interface MealPlan {
   };
 }
 
+interface Exercise {
+  id: string;
+  name: string;
+  category: 'cardio' | 'strength' | 'flexibility' | 'sports';
+  duration: number;
+  calories: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  equipment: string[];
+  instructions: string[];
+}
+
+interface WorkoutPlan {
+  id: string;
+  name: string;
+  duration: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  exercises: Exercise[];
+  totalCalories: number;
+  totalDuration: number;
+}
 function App() {
   const [activeMenu, setActiveMenu] = useState<MenuItem>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedMealPlan, setSelectedMealPlan] = useState<MealPlan | null>(null);
   const [shoppingList, setShoppingList] = useState<{item: string; checked: boolean; category: string}[]>([]);
+  const [selectedWorkoutPlan, setSelectedWorkoutPlan] = useState<WorkoutPlan | null>(null);
+  const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   
   const [userStats, setUserStats] = useState<DashboardStats>({
     currentWeight: 75,
@@ -117,6 +139,78 @@ function App() {
     }
   ];
 
+  const exercises: Exercise[] = [
+    {
+      id: 'push-ups',
+      name: 'Push-ups',
+      category: 'strength',
+      duration: 10,
+      calories: 50,
+      difficulty: 'beginner',
+      equipment: [],
+      instructions: ['Start in plank position', 'Lower body to ground', 'Push back up', 'Repeat']
+    },
+    {
+      id: 'jumping-jacks',
+      name: 'Jumping Jacks',
+      category: 'cardio',
+      duration: 15,
+      calories: 75,
+      difficulty: 'beginner',
+      equipment: [],
+      instructions: ['Stand with feet together', 'Jump while spreading legs', 'Raise arms overhead', 'Return to start']
+    },
+    {
+      id: 'squats',
+      name: 'Squats',
+      category: 'strength',
+      duration: 12,
+      calories: 60,
+      difficulty: 'beginner',
+      equipment: [],
+      instructions: ['Stand with feet shoulder-width apart', 'Lower body as if sitting', 'Keep chest up', 'Return to standing']
+    },
+    {
+      id: 'plank',
+      name: 'Plank Hold',
+      category: 'strength',
+      duration: 8,
+      calories: 40,
+      difficulty: 'intermediate',
+      equipment: [],
+      instructions: ['Start in push-up position', 'Hold body straight', 'Engage core muscles', 'Breathe steadily']
+    }
+  ];
+
+  const workoutPlans: WorkoutPlan[] = [
+    {
+      id: 'beginner-cardio',
+      name: 'Beginner Cardio',
+      duration: '20 minutes',
+      difficulty: 'beginner',
+      exercises: [exercises[1], exercises[0], exercises[2]],
+      totalCalories: 185,
+      totalDuration: 37
+    },
+    {
+      id: 'strength-basics',
+      name: 'Strength Basics',
+      duration: '25 minutes',
+      difficulty: 'beginner',
+      exercises: [exercises[0], exercises[2], exercises[3]],
+      totalCalories: 150,
+      totalDuration: 30
+    },
+    {
+      id: 'full-body-workout',
+      name: 'Full Body Workout',
+      duration: '30 minutes',
+      difficulty: 'intermediate',
+      exercises: exercises,
+      totalCalories: 225,
+      totalDuration: 45
+    }
+  ];
   const getHealthColor = (type: string, value: number | { systolic: number; diastolic: number }) => {
     switch (type) {
       case 'weight':
@@ -170,6 +264,13 @@ function App() {
     ));
   };
 
+  const toggleExerciseComplete = (exerciseId: string) => {
+    setCompletedExercises(prev => 
+      prev.includes(exerciseId) 
+        ? prev.filter(id => id !== exerciseId)
+        : [...prev, exerciseId]
+    );
+  };
   const renderDashboard = () => (
     <div className="space-y-6 pb-24">
       {/* AI Photo Feature - Thumb-friendly */}
