@@ -468,7 +468,15 @@ function App() {
               <h4 className="text-lg font-medium mb-4">Choose Duration</h4>
               <div className="grid grid-cols-2 gap-3 mb-6">
                 {['1 Day', '3 Days', '1 Week', '2 Weeks', '1 Month'].map(duration => (
-                  <button key={duration} className="p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                  <button 
+                    key={duration} 
+                    onClick={() => setSelectedPeriod(duration)}
+                    className={`p-4 border-2 rounded-xl transition-colors ${
+                      selectedPeriod === duration 
+                        ? 'border-blue-500 bg-blue-50 text-blue-700' 
+                        : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
+                    }`}
+                  >
                     <span className="font-medium">{duration}</span>
                   </button>
                 ))}
@@ -476,7 +484,7 @@ function App() {
             </div>
 
             <div>
-              <h4 className="text-lg font-medium mb-4 text-center">Available Plans (1 Day)</h4>
+              <h4 className="text-lg font-medium mb-4 text-center">Available Plans ({selectedPeriod})</h4>
               <div className="space-y-4">
                 {mealPlans.map(plan => (
                   <div key={plan.id} className="border-2 border-gray-200 rounded-xl p-4">
