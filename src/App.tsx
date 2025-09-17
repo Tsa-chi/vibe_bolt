@@ -578,7 +578,7 @@ function App() {
         </div>
       )}
 
-      {/* Daily Tips */}
+      {/* Manual Shopping Lists Section */}
       <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 text-white">
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <Zap className="w-5 h-5" />
@@ -827,42 +827,87 @@ function App() {
         {/* Manual Add Section */}
         <div className="mt-6 border-t border-gray-200 pt-6">
           <h4 className="font-semibold mb-4 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-blue-600" />
-            Add Item Manually
-          </h4>
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={newShoppingItem}
-                onChange={(e) => setNewShoppingItem(e.target.value)}
-                placeholder="Enter item name..."
-                className="flex-1 p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
-                onKeyPress={(e) => e.key === 'Enter' && addManualShoppingItem()}
-              />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
-              >
-                <option value="Produce">Produce</option>
-                <option value="Proteins">Proteins</option>
-                <option value="Dairy">Dairy</option>
-                <option value="Grains">Grains</option>
-                <option value="Bakery">Bakery</option>
-                <option value="Pantry">Pantry</option>
-                <option value="Refrigerated">Refrigerated</option>
-                <option value="Beverages">Beverages</option>
-                <option value="Supplements">Supplements</option>
-                <option value="Other">Other</option>
-              </select>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-blue-600" />
+            Manual Shopping List
+          </h3>
+          {manualShoppingList.length > 0 && (
+            <button
+              onClick={mergeShoppingLists}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm"
+            >
+              <ArrowRight className="w-4 h-4 mr-1" />
+              Merge with Main List
+            </button>
+          )}
+        </div>
+
+        {/* Manual Items Display */}
+        {manualShoppingList.length > 0 && (
+          <div className="mb-6">
+            <div className="space-y-2">
+              {manualShoppingList.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center flex-1">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => toggleManualShoppingItem(item.id)}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 mr-3"
+                    />
+                    <span className={`flex-1 ${item.checked ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+                      {item.name}
+                    </span>
+                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full mr-3">
+                      {item.category}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeManualShoppingItem(item.id)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* Add Manual Item Section */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-700">Add Items Manually</h4>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={manualItemInput}
+              onChange={(e) => setManualItemInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addManualShoppingItem()}
+              placeholder="Enter item name..."
+              className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <select
+              value={manualItemCategory}
+              onChange={(e) => setManualItemCategory(e.target.value)}
+              className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Produce">Produce</option>
+              <option value="Proteins">Proteins</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Grains">Grains</option>
+              <option value="Pantry">Pantry</option>
+              <option value="Frozen">Frozen</option>
+              <option value="Beverages">Beverages</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Other">Other</option>
+            </select>
             <button
               onClick={addManualShoppingItem}
-              disabled={!newShoppingItem.trim()}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              disabled={!manualItemInput.trim()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              Add to List
+              Add
             </button>
           </div>
         </div>
