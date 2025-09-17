@@ -92,6 +92,26 @@ function App() {
   const [manualItemInput, setManualItemInput] = useState('');
   const [manualItemCategory, setManualItemCategory] = useState('Other');
   
+  // Food tracking state
+  const [foodEntries, setFoodEntries] = useState<Array<{
+    id: string;
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    source: 'meal-plan' | 'manual';
+  }>>([]);
+  const [manualFoodItems, setManualFoodItems] = useState<Array<{
+    id: string;
+    name: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }>>([]);
+  const [showMergedFood, setShowMergedFood] = useState(false);
+  
   const [userStats, setUserStats] = useState<DashboardStats>({
     currentWeight: 75,
     goalWeight: 65,
@@ -375,6 +395,51 @@ function App() {
         : [...prev, exerciseId]
     );
   };
+
+  // Food tracking functions
+  const addFoodFromMealPlan = () => {
+    if (!selectedMealPlan) return;
+    
+    const mealPlanFoods = Object.values(selectedMealPlan.meals).flat().map(item => ({
+      id: `meal-${Date.now()}-${Math.random()}`,
+      name: item,
+      calories: Math.floor(Math.random() * 300) + 100, // Sample calories
+      protein: Math.floor(Math.random() * 25) + 5,
+      carbs: Math.floor(Math.random() * 40) + 10,
+      fat: Math.floor(Math.random() * 15) + 2,
+      source: 'meal-plan' as const
+    }));
+    
+    setFoodEntries(mealPlanFoods);
+  };
+
+  const addManualFoodItem = (name: string, calories: number, protein: number, carbs: number, fat: number) => {
+    if (manualFoodItems.length >= 20) return;
+    
+    const newItem = {
+      id: `manual-food-${Date.now()}`,
+      name,
+      calories,
+      protein,
+      carbs,
+      fat
+    };
+    
+    setManualFoodItems([...manualFoodItems, newItem]);
+  };
+
+  const removeManualFoodItem = (id: string) => {
+    setManualFoodItems(manualFoodItems.filter(item => item.id !== id));
+  };
+
+  const mergeFoodLists = () => {
+    const merged = [
+      ...foodEntries,
+      ...manualFoodItems.map(item => ({ ...item, source: 'manual' as const }))
+    ];
+    setShowMergedFood(!showMergedFood);
+  };
+
   const renderDashboard = () => (
     <div className="space-y-6 pb-24">
       {/* AI Photo Feature - Thumb-friendly */}
@@ -1098,6 +1163,208 @@ function App() {
     </div>
   );
 
+  const renderFoodInput = () => (
+    <div className="space-y-6 pb-24">
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 className="text-xl font-semibold mb-6 text-center">Add Food</h3>
+        
+        {/* Meal Plan Integration */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <Calendar className="w-5 h-5 mr-2 text-green-600" />
+            From Meal Plan
+          </h3>
+          {selectedMealPlan ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h4 className="font-medium text-green-800">{selectedMealPlan.name}</h4>
+                <p className="text-sm text-green-600 mt-1">
+                  {Object.values(selectedMealPlan.meals).reduce((total, meal) => total + meal.length, 0)} food items
+                </p>
+              </div>
+              <button
+                onClick={addFoodFromMealPlan}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Add All Foods from Meal Plan
+              </button>
+            </div>
+          ) : (
+            <p className="text-gray-500">Select a meal plan first to add foods from it.</p>
+          )}
+        </div>
+
+        {/* Manual Food Entry */}
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <Plus className="w-5 h-5 mr-2 text-blue-600" />
+            Add Manually ({manualFoodItems.length}/20)
+          </h3>
+          
+          {manualFoodItems.length < 20 && (
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const name = formData.get('foodName') as string;
+              const calories = parseInt(formData.get('calories') as string);
+              const protein = parseInt(formData.get('protein') as string);
+              const carbs = parseInt(formData.get('carbs') as string);
+              const fat = parseInt(formData.get('fat') as string);
+              
+              if (name && calories && protein && carbs && fat) {
+                addManualFoodItem(name, calories, protein, carbs, fat);
+                (e.target as HTMLFormElement).reset();
+              }
+            }} className="space-y-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  name="foodName"
+                  type="text"
+                  placeholder="Food name"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <input
+                  name="calories"
+                  type="number"
+                  placeholder="Calories"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="1"
+                />
+                <input
+                  name="protein"
+                  type="number"
+                  placeholder="Protein (g)"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                />
+                <input
+                  name="carbs"
+                  type="number"
+                  placeholder="Carbs (g)"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                />
+                <input
+                  name="fat"
+                  type="number"
+                  placeholder="Fat (g)"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  min="0"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Food Item
+              </button>
+            </form>
+          )}
+
+          {/* Manual Food Items List */}
+          {manualFoodItems.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-700">Manual Entries:</h4>
+              {manualFoodItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <span className="font-medium text-gray-800">{item.name}</span>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {item.calories} cal • {item.protein}g protein • {item.carbs}g carbs • {item.fat}g fat
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeManualFoodItem(item.id)}
+                    className="text-red-500 hover:text-red-700 p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Merge Lists */}
+        {(foodEntries.length > 0 || manualFoodItems.length > 0) && (
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <button
+              onClick={mergeFoodLists}
+              className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
+            >
+              <BarChart3 className="w-5 h-5 mr-2" />
+              {showMergedFood ? 'Hide' : 'Show'} Complete Food Log
+            </button>
+          </div>
+        )}
+
+        {/* Merged Food List */}
+        {showMergedFood && (
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Complete Food Log</h3>
+            <div className="space-y-3">
+              {[...foodEntries, ...manualFoodItems.map(item => ({ ...item, source: 'manual' as const }))].map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <span className="font-medium text-gray-800">{item.name}</span>
+                      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                        item.source === 'meal-plan' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {item.source === 'meal-plan' ? 'Meal Plan' : 'Manual'}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {item.calories} cal • {item.protein}g protein • {item.carbs}g carbs • {item.fat}g fat
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Nutrition Summary */}
+            <div className="mt-6 p-4 bg-purple-50 rounded-lg">
+              <h4 className="font-medium text-purple-800 mb-2">Daily Totals</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-purple-600">Calories:</span>
+                  <span className="ml-1 font-medium">
+                    {[...foodEntries, ...manualFoodItems].reduce((sum, item) => sum + item.calories, 0)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-purple-600">Protein:</span>
+                  <span className="ml-1 font-medium">
+                    {[...foodEntries, ...manualFoodItems].reduce((sum, item) => sum + item.protein, 0)}g
+                  </span>
+                </div>
+                <div>
+                  <span className="text-purple-600">Carbs:</span>
+                  <span className="ml-1 font-medium">
+                    {[...foodEntries, ...manualFoodItems].reduce((sum, item) => sum + item.carbs, 0)}g
+                  </span>
+                </div>
+                <div>
+                  <span className="text-purple-600">Fat:</span>
+                  <span className="ml-1 font-medium">
+                    {[...foodEntries, ...manualFoodItems].reduce((sum, item) => sum + item.fat, 0)}g
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   // Simplified versions of other render functions for space
   const renderProfile = () => (
     <div className="space-y-6 pb-24">
@@ -1135,6 +1402,7 @@ function App() {
       case 'meals': return renderMeals();
       case 'exercise': return renderExercise();
       case 'shopping': return renderShopping();
+      case 'food-input': return renderFoodInput();
       default: return renderDashboard();
     }
   };
