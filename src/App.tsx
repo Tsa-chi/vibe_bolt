@@ -42,6 +42,7 @@ interface AnalysisData {
   weightProgress: number;
   exerciseCompliance: number;
 }
+
 interface MealPlan {
   id: string;
   name: string;
@@ -78,11 +79,13 @@ interface WorkoutPlan {
   totalCalories: number;
   totalDuration: number;
 }
+
 function App() {
   const [activeMenu, setActiveMenu] = useState<MenuItem>('dashboard');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedMealPlan, setSelectedMealPlan] = useState<MealPlan | null>(null);
   const [shoppingList, setShoppingList] = useState<{item: string; checked: boolean; category: string}[]>([]);
+  const [manualShoppingList, setManualShoppingList] = useState<{item: string; checked: boolean; category: string}[]>([]);
   const [selectedWorkoutPlan, setSelectedWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1 Day');
@@ -228,6 +231,7 @@ function App() {
       totalDuration: 45
     }
   ];
+
   const getHealthColor = (type: string, value: number | { systolic: number; diastolic: number }) => {
     switch (type) {
       case 'weight':
@@ -254,7 +258,6 @@ function App() {
   };
 
   const generateShoppingList = (plan: MealPlan) => {
-    // Generate shopping list based on meal plan
     const ingredientMap: { [key: string]: string } = {
       'Oatmeal with berries': 'Oats, Mixed Berries',
       'Greek yogurt': 'Greek Yogurt',
@@ -297,7 +300,6 @@ function App() {
 
     const allIngredients = new Set<string>();
     
-    // Extract ingredients from all meals
     Object.values(plan.meals).flat().forEach(meal => {
       if (ingredientMap[meal]) {
         ingredientMap[meal].split(', ').forEach(ingredient => {
@@ -321,11 +323,10 @@ function App() {
     ));
   };
 
-  const markShoppingListDone = () => {
-    setShoppingList([]);
-    setSelectedMealPlan(null);
-    // Show success message or redirect to meals
-    setActiveMenu('meals');
+  const toggleManualShoppingItem = (index: number) => {
+    setManualShoppingList(prev => prev.map((item, i) => 
+      i === index ? { ...item, checked: !item.checked } : item
+    ));
   };
 
   const addManualShoppingItem = () => {
@@ -335,13 +336,28 @@ function App() {
         checked: false,
         category: selectedCategory
       };
-      setShoppingList(prev => [...prev, newItem]);
+      setManualShoppingList(prev => [...prev, newItem]);
       setNewShoppingItem('');
     }
   };
 
-  const removeShoppingItem = (index: number) => {
-    setShoppingList(prev => prev.filter((_, i) => i !== index));
+  const removeManualShoppingItem = (index: number) => {
+    setManualShoppingList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const mergeShoppingLists = () => {
+    const existingItems = new Set(shoppingList.map(item => item.item.toLowerCase()));
+    const newItems = manualShoppingList.filter(item => 
+      !existingItems.has(item.item.toLowerCase())
+    );
+    setShoppingList(prev => [...prev, ...newItems]);
+    setManualShoppingList([]);
+  };
+
+  const clearShoppingList = () => {
+    setShoppingList([]);
+    setManualShoppingList([]);
+    setSelectedMealPlan(null);
   };
 
   const toggleExerciseComplete = (exerciseId: string) => {
@@ -351,9 +367,10 @@ function App() {
         : [...prev, exerciseId]
     );
   };
+
   const renderDashboard = () => (
     <div className="space-y-6 pb-24">
-      {/* AI Photo Feature - Thumb-friendly */}
+      {/* AI Photo Feature */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
         <div className="text-center">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -369,6 +386,338 @@ function App() {
           *Results may vary based on individual factors
         </p>
       </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <Scale className="w-5 h-5 text-blue-600" />
+            <span className="text-sm text-gray-500">Weight</span>
+          </div>
+          <div className="text-2xl font-bold text-gray-900">{userStats.currentWeight}kg</div>
+          <div className="text-sm text-gray-500">Goal: {userStats.goalWeight}kg</div>
+        </div>
+
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <Zap className="w-5 h-5 text-orange-600" />
+            <span className="text-sm text-gray-500">Calories</span>
+          </div>
+          <div className="text-2xl font-bold text-gray-900">{userStats.caloriesConsumed}</div>
+          <div className="text-sm text-gray-500">of {userStats.dailyCalories}</div>
+        </div>
+      </div>
+
+      {/* Progress Bars */}
+      <div className="bg-white rounded-xl p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Today's Progress</h3>
+        
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>Calories</span>
+              <span>{userStats.caloriesConsumed}/{userStats.dailyCalories}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min((userStats.caloriesConsumed / userStats.dailyCalories) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>Exercise</span>
+              <span>{userStats.exerciseMinutes}/{userStats.exerciseGoal} min</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min((userStats.exerciseMinutes / userStats.exerciseGoal) * 100, 100)}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderShopping = () => (
+    <div className="space-y-6 pb-24">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Shopping List</h2>
+        <ShoppingCart className="w-6 h-6 text-teal-600" />
+      </div>
+
+      {/* Meal Plan Shopping List */}
+      {shoppingList.length > 0 && (
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">From Meal Plan</h3>
+            <button
+              onClick={clearShoppingList}
+              className="text-red-600 text-sm hover:text-red-700"
+            >
+              Clear All
+            </button>
+          </div>
+          
+          <div className="space-y-2">
+            {shoppingList.map((item, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    onChange={() => toggleShoppingItem(index)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className={`${item.checked ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                    {item.item}
+                  </span>
+                </div>
+                <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">
+                  {item.category}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Manual Shopping List */}
+      <div className="bg-white rounded-xl p-6 shadow-sm">
+        <h3 className="text-lg font-semibold mb-4">Manual List</h3>
+        
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={newShoppingItem}
+            onChange={(e) => setNewShoppingItem(e.target.value)}
+            placeholder="Add item..."
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            onKeyPress={(e) => e.key === 'Enter' && addManualShoppingItem()}
+          />
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="Produce">Produce</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Proteins">Proteins</option>
+            <option value="Grains">Grains</option>
+            <option value="Pantry">Pantry</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Other">Other</option>
+          </select>
+          <button
+            onClick={addManualShoppingItem}
+            className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            Add
+          </button>
+        </div>
+
+        {manualShoppingList.length > 0 && (
+          <div className="space-y-2">
+            {manualShoppingList.map((item, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={item.checked}
+                    onChange={() => toggleManualShoppingItem(index)}
+                    className="w-5 h-5 text-teal-600 rounded"
+                  />
+                  <span className={`${item.checked ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                    {item.item}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                    {item.category}
+                  </span>
+                  <button
+                    onClick={() => removeManualShoppingItem(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Merge Lists Button */}
+      {shoppingList.length > 0 && manualShoppingList.length > 0 && (
+        <button
+          onClick={mergeShoppingLists}
+          className="w-full bg-teal-600 text-white py-4 rounded-xl font-semibold hover:bg-teal-700 transition-colors"
+        >
+          Merge Lists
+        </button>
+      )}
+    </div>
+  );
+
+  const renderMeals = () => (
+    <div className="space-y-6 pb-24">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">Meal Planning</h2>
+        <UtensilsCrossed className="w-6 h-6 text-orange-600" />
+      </div>
+
+      <div className="grid gap-4">
+        {mealPlans.map((plan) => (
+          <div key={plan.id} className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                <p className="text-sm text-gray-500">{plan.duration}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-orange-600">{plan.calories} cal</div>
+                <div className="text-xs text-gray-500">
+                  P: {plan.protein}g | C: {plan.carbs}g | F: {plan.fat}g
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <h4 className="font-medium text-gray-700 mb-1">Breakfast</h4>
+                <p className="text-sm text-gray-600">{plan.meals.breakfast.join(', ')}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-700 mb-1">Lunch</h4>
+                <p className="text-sm text-gray-600">{plan.meals.lunch.join(', ')}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-700 mb-1">Dinner</h4>
+                <p className="text-sm text-gray-600">{plan.meals.dinner.join(', ')}</p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-700 mb-1">Snacks</h4>
+                <p className="text-sm text-gray-600">{plan.meals.snacks.join(', ')}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setSelectedMealPlan(plan);
+                generateShoppingList(plan);
+                setActiveMenu('shopping');
+              }}
+              className="w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+            >
+              Generate Shopping List
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    switch (activeMenu) {
+      case 'dashboard':
+        return renderDashboard();
+      case 'shopping':
+        return renderShopping();
+      case 'meals':
+        return renderMeals();
+      case 'profile':
+        return (
+          <div className="space-y-6 pb-24">
+            <h2 className="text-2xl font-bold text-gray-900">Profile</h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <p className="text-gray-600">Profile settings coming soon...</p>
+            </div>
+          </div>
+        );
+      default:
+        return (
+          <div className="space-y-6 pb-24">
+            <h2 className="text-2xl font-bold text-gray-900 capitalize">{activeMenu.replace('-', ' ')}</h2>
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <p className="text-gray-600">This section is coming soon...</p>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg md:hidden"
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+              <h1 className="text-xl font-bold text-gray-900">Me but better</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Bell className="w-6 h-6 text-gray-600" />
+              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className={`${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:static inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out`}>
+          <div className="p-4 pt-20 md:pt-4">
+            <nav className="space-y-2">
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveMenu(item.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                      activeMenu === item.id
+                        ? 'bg-gray-100 text-gray-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${item.color}`} />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-6">
+          {renderContent()}
+        </main>
+      </div>
+
+      {/* Mobile overlay */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }
