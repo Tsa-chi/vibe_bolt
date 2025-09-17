@@ -304,6 +304,12 @@ function App() {
     ));
   };
 
+  const markShoppingListDone = () => {
+    setShoppingList([]);
+    setSelectedMealPlan(null);
+    // Show success message or redirect to meals
+    setActiveMenu('meals');
+  };
   const toggleExerciseComplete = (exerciseId: string) => {
     setCompletedExercises(prev => 
       prev.includes(exerciseId) 
@@ -587,6 +593,14 @@ function App() {
                 <button className="text-sm text-green-600 hover:text-green-700 px-3 py-1 border border-green-200 rounded-lg">
                   Share
                 </button>
+                {shoppingList.filter(item => item.checked).length === shoppingList.length && shoppingList.length > 0 && (
+                  <button 
+                    onClick={markShoppingListDone}
+                    className="text-sm text-white bg-green-600 hover:bg-green-700 px-4 py-1 border border-green-600 rounded-lg font-medium"
+                  >
+                    Done
+                  </button>
+                )}
                 <button 
                   onClick={() => setShoppingList([])}
                   className="text-sm text-red-600 hover:text-red-700 px-3 py-1 border border-red-200 rounded-lg"
@@ -630,6 +644,22 @@ function App() {
                 </div>
               );
             })}
+
+            {shoppingList.filter(item => item.checked).length === shoppingList.length && shoppingList.length > 0 && (
+              <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
+                <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                <h4 className="text-lg font-bold text-green-800 mb-2">Shopping Complete! 🎉</h4>
+                <p className="text-green-700 mb-4">
+                  Great job! You've completed your entire shopping list.
+                </p>
+                <button 
+                  onClick={markShoppingListDone}
+                  className="w-full bg-green-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-green-700 transition-colors"
+                >
+                  Mark as Done & Create New List
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
