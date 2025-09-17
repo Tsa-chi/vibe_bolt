@@ -408,6 +408,134 @@ function App() {
         </div>
       </div>
 
+      {/* Analysis Section */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-indigo-600" />
+            Nutrition Analysis
+          </h3>
+          <select 
+            value={selectedPeriod} 
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="text-sm border border-gray-300 rounded-lg px-3 py-1"
+          >
+            <option value="1 Day">1 Day</option>
+            <option value="3 Days">3 Days</option>
+            <option value="1 Week">1 Week</option>
+            <option value="2 Weeks">2 Weeks</option>
+            <option value="1 Month">1 Month</option>
+          </select>
+        </div>
+
+        {selectedMealPlan ? (
+          <div className="space-y-4">
+            {/* Key Metrics */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-2 relative">
+                  <div className="w-16 h-16 rounded-full border-4 border-green-200 flex items-center justify-center">
+                    <span className="text-lg font-bold text-green-600">92</span>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-gray-700">Nutrition Score</p>
+                <p className="text-xs text-green-600">Excellent</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-2 relative">
+                  <div className="w-16 h-16 rounded-full border-4 border-blue-200 flex items-center justify-center">
+                    <span className="text-lg font-bold text-blue-600">87%</span>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-gray-700">Plan Adherence</p>
+                <p className="text-xs text-blue-600">Very Good</p>
+              </div>
+            </div>
+
+            {/* Calorie Analysis */}
+            <div className="bg-gray-50 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Total Calories ({selectedPeriod})</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {selectedMealPlan.calories * (selectedPeriod === '1 Day' ? 1 : selectedPeriod === '3 Days' ? 3 : selectedPeriod === '1 Week' ? 7 : selectedPeriod === '2 Weeks' ? 14 : 30)} cal
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Avg: {selectedMealPlan.calories} cal/day
+              </p>
+            </div>
+
+            {/* Macro Breakdown */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-700">Macro Breakdown</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Protein</span>
+                  <span className="text-sm font-medium">{selectedMealPlan.protein}g (30%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="bg-red-500 h-1.5 rounded-full" style={{ width: '30%' }}></div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Carbs</span>
+                  <span className="text-sm font-medium">{selectedMealPlan.carbs}g (40%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '40%' }}></div>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Fat</span>
+                  <span className="text-sm font-medium">{selectedMealPlan.fat}g (30%)</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: '30%' }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            <div className="bg-indigo-50 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-indigo-800 mb-2">💡 Recommendations</h4>
+              <p className="text-sm text-indigo-700">
+                Your macro balance is excellent! Consider adding more variety in your protein sources for optimal nutrition.
+              </p>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => setActiveMenu('meals')}
+                className="py-3 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors"
+              >
+                Adjust Meal Plan
+              </button>
+              <button 
+                onClick={() => setActiveMenu('exercise')}
+                className="py-3 border-2 border-indigo-600 text-indigo-600 rounded-xl font-medium text-sm hover:bg-indigo-50 transition-colors"
+              >
+                View Exercises
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 mb-4">No meal plan selected for analysis</p>
+            <button 
+              onClick={() => setActiveMenu('meals')}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Create Meal Plan
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl p-6 shadow-lg text-center">
