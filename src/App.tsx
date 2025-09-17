@@ -237,24 +237,64 @@ function App() {
   };
 
   const generateShoppingList = (plan: MealPlan) => {
-    const items = [
-      // From breakfast
-      { item: 'Oats', checked: false, category: 'Grains' },
-      { item: 'Berries', checked: false, category: 'Produce' },
-      { item: 'Greek Yogurt', checked: false, category: 'Dairy' },
-      // From lunch
-      { item: 'Chicken Breast', checked: false, category: 'Proteins' },
-      { item: 'Mixed Greens', checked: false, category: 'Produce' },
-      { item: 'Quinoa', checked: false, category: 'Grains' },
-      // From dinner
-      { item: 'Salmon Fillet', checked: false, category: 'Proteins' },
-      { item: 'Broccoli', checked: false, category: 'Produce' },
-      { item: 'Sweet Potato', checked: false, category: 'Produce' },
-      // Snacks
-      { item: 'Apples', checked: false, category: 'Produce' },
-      { item: 'Almond Butter', checked: false, category: 'Pantry' },
-      { item: 'Protein Powder', checked: false, category: 'Supplements' }
-    ];
+    // Generate shopping list based on meal plan
+    const ingredientMap: { [key: string]: string } = {
+      'Oatmeal with berries': 'Oats, Mixed Berries',
+      'Greek yogurt': 'Greek Yogurt',
+      'Green tea': 'Green Tea Bags',
+      'Grilled chicken salad': 'Chicken Breast, Mixed Greens, Cherry Tomatoes',
+      'Quinoa': 'Quinoa',
+      'Olive oil dressing': 'Olive Oil, Lemon',
+      'Baked salmon': 'Salmon Fillet',
+      'Steamed broccoli': 'Broccoli',
+      'Sweet potato': 'Sweet Potato',
+      'Apple with almond butter': 'Apples, Almond Butter',
+      'Protein shake': 'Protein Powder, Milk',
+      'Greek yogurt parfait': 'Greek Yogurt, Granola, Honey',
+      'Whole grain toast': 'Whole Grain Bread',
+      'Fresh fruit': 'Bananas, Strawberries',
+      'Mediterranean bowl': 'Chickpeas, Cucumber, Olives, Feta Cheese',
+      'Hummus': 'Hummus',
+      'Pita bread': 'Pita Bread',
+      'Grilled fish': 'White Fish Fillet',
+      'Roasted vegetables': 'Bell Peppers, Zucchini, Red Onion',
+      'Brown rice': 'Brown Rice',
+      'Mixed nuts': 'Mixed Nuts',
+      'Herbal tea': 'Herbal Tea Bags'
+    };
+
+    const categoryMap: { [key: string]: string } = {
+      'Oats': 'Grains', 'Mixed Berries': 'Produce', 'Greek Yogurt': 'Dairy',
+      'Green Tea Bags': 'Beverages', 'Chicken Breast': 'Proteins', 'Mixed Greens': 'Produce',
+      'Cherry Tomatoes': 'Produce', 'Quinoa': 'Grains', 'Olive Oil': 'Pantry',
+      'Lemon': 'Produce', 'Salmon Fillet': 'Proteins', 'Broccoli': 'Produce',
+      'Sweet Potato': 'Produce', 'Apples': 'Produce', 'Almond Butter': 'Pantry',
+      'Protein Powder': 'Supplements', 'Milk': 'Dairy', 'Granola': 'Pantry',
+      'Honey': 'Pantry', 'Whole Grain Bread': 'Bakery', 'Bananas': 'Produce',
+      'Strawberries': 'Produce', 'Chickpeas': 'Pantry', 'Cucumber': 'Produce',
+      'Olives': 'Pantry', 'Feta Cheese': 'Dairy', 'Hummus': 'Refrigerated',
+      'Pita Bread': 'Bakery', 'White Fish Fillet': 'Proteins', 'Bell Peppers': 'Produce',
+      'Zucchini': 'Produce', 'Red Onion': 'Produce', 'Brown Rice': 'Grains',
+      'Mixed Nuts': 'Pantry', 'Herbal Tea Bags': 'Beverages'
+    };
+
+    const allIngredients = new Set<string>();
+    
+    // Extract ingredients from all meals
+    Object.values(plan.meals).flat().forEach(meal => {
+      if (ingredientMap[meal]) {
+        ingredientMap[meal].split(', ').forEach(ingredient => {
+          allIngredients.add(ingredient);
+        });
+      }
+    });
+
+    const items = Array.from(allIngredients).map(ingredient => ({
+      item: ingredient,
+      checked: false,
+      category: categoryMap[ingredient] || 'Other'
+    }));
+
     setShoppingList(items);
   };
 
@@ -478,13 +518,33 @@ function App() {
               <button 
                 onClick={() => {
                   generateShoppingList(selectedMealPlan);
-                  setActiveMenu('shopping');
                 }}
-                className="py-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
+                className="py-4 bg-teal-600 text-white rounded-xl font-semibold hover:bg-teal-700 transition-colors"
               >
-                Create Shopping List
+                Generate Shopping List
               </button>
             </div>
+            
+            {shoppingList.length > 0 && (
+              <div className="mt-4 p-4 bg-teal-50 rounded-xl border border-teal-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-teal-600" />
+                    <span className="text-teal-800 font-medium">Shopping list generated!</span>
+                  </div>
+                  <button 
+                    onClick={() => setActiveMenu('shopping')}
+                    className="text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
+                  >
+                    View List
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-teal-600 mt-1">
+                  {shoppingList.length} items added to your shopping list
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -527,10 +587,16 @@ function App() {
                 <button className="text-sm text-green-600 hover:text-green-700 px-3 py-1 border border-green-200 rounded-lg">
                   Share
                 </button>
+                <button 
+                  onClick={() => setShoppingList([])}
+                  className="text-sm text-red-600 hover:text-red-700 px-3 py-1 border border-red-200 rounded-lg"
+                >
+                  Clear
+                </button>
               </div>
             </div>
 
-            {['Produce', 'Proteins', 'Dairy', 'Grains', 'Pantry', 'Supplements'].map(category => {
+            {['Produce', 'Proteins', 'Dairy', 'Grains', 'Bakery', 'Pantry', 'Refrigerated', 'Beverages', 'Supplements', 'Other'].map(category => {
               const categoryItems = shoppingList.filter(item => item.category === category);
               if (categoryItems.length === 0) return null;
               
@@ -539,6 +605,9 @@ function App() {
                   <h4 className="font-semibold mb-3 flex items-center gap-2 text-lg">
                     <MapPin className="w-5 h-5 text-gray-500" />
                     {category}
+                    <span className="text-sm text-gray-500 font-normal">
+                      ({categoryItems.filter(item => !item.checked).length} remaining)
+                    </span>
                   </h4>
                   <div className="space-y-3">
                     {categoryItems.map((item, index) => {
@@ -561,6 +630,164 @@ function App() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderExercise = () => (
+    <div className="space-y-6 pb-24">
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 className="text-xl font-semibold mb-6 text-center">Exercise Planner</h3>
+        
+        {!selectedWorkoutPlan ? (
+          <div className="space-y-6">
+            <div>
+              <h4 className="text-lg font-medium mb-4 text-center">Choose Your Workout</h4>
+              <div className="space-y-4">
+                {workoutPlans.map(plan => (
+                  <div key={plan.id} className="border-2 border-gray-200 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h5 className="font-semibold text-lg">{plan.name}</h5>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            plan.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                            plan.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {plan.difficulty}
+                          </span>
+                          <span className="text-sm text-gray-600">{plan.duration}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-red-600">{plan.totalCalories} cal</p>
+                        <p className="text-xs text-gray-500">{plan.exercises.length} exercises</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedWorkoutPlan(plan)}
+                      className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                    >
+                      Start Workout
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-red-50 rounded-xl p-4">
+              <h4 className="font-semibold text-red-900 mb-2">Current Workout: {selectedWorkoutPlan.name}</h4>
+              <p className="text-red-700 text-sm mb-3">{selectedWorkoutPlan.duration} • {selectedWorkoutPlan.totalCalories} calories</p>
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Exercises: {selectedWorkoutPlan.exercises.length}</span>
+                <span>Completed: {completedExercises.length}/{selectedWorkoutPlan.exercises.length}</span>
+              </div>
+              <div className="w-full bg-red-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-red-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${(completedExercises.length / selectedWorkoutPlan.exercises.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h5 className="font-semibold text-lg">Exercise Checklist</h5>
+              {selectedWorkoutPlan.exercises.map((exercise, index) => (
+                <div key={exercise.id} className={`border-2 rounded-xl p-4 transition-colors ${
+                  completedExercises.includes(exercise.id) 
+                    ? 'border-green-300 bg-green-50' 
+                    : 'border-gray-200'
+                }`}>
+                  <div className="flex items-start gap-4">
+                    <label className="flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="w-6 h-6 rounded text-green-600" 
+                        checked={completedExercises.includes(exercise.id)}
+                        onChange={() => toggleExerciseComplete(exercise.id)}
+                      />
+                    </label>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h6 className={`font-semibold text-lg ${
+                          completedExercises.includes(exercise.id) ? 'text-green-700 line-through' : ''
+                        }`}>
+                          {exercise.name}
+                        </h6>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-red-600">{exercise.calories} cal</p>
+                          <p className="text-xs text-gray-500">{exercise.duration} min</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          exercise.difficulty === 'beginner' ? 'bg-green-100 text-green-700' :
+                          exercise.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {exercise.difficulty}
+                        </span>
+                        <span className="text-xs text-gray-600 capitalize">{exercise.category}</span>
+                        {exercise.equipment.length === 0 && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            No Equipment
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Instructions:</p>
+                        <ol className="text-sm text-gray-600 space-y-1">
+                          {exercise.instructions.map((instruction, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <span className="text-red-500 font-medium">{idx + 1}.</span>
+                              {instruction}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {completedExercises.length === selectedWorkoutPlan.exercises.length && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center">
+                <Trophy className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                <h4 className="text-lg font-bold text-green-800 mb-2">Workout Complete! 🎉</h4>
+                <p className="text-green-700 mb-4">
+                  Great job! You burned {selectedWorkoutPlan.totalCalories} calories in {selectedWorkoutPlan.duration}.
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => {
+                  setSelectedWorkoutPlan(null);
+                  setCompletedExercises([]);
+                }}
+                className="py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Change Workout
+              </button>
+              <button 
+                onClick={() => {
+                  // Reset for next session
+                  setCompletedExercises([]);
+                }}
+                className="py-4 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors"
+              >
+                Reset Progress
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -683,7 +910,7 @@ function App() {
             { id: 'meals', icon: UtensilsCrossed, label: 'Meals' },
             { id: 'exercise', icon: Dumbbell, label: 'Exercise' },
             { id: 'food-input', icon: Plus, label: 'Add Food' },
-            { id: 'shopping', icon: ShoppingCart, label: 'Shopping' }
+            { id: 'shopping', icon: ShoppingCart, label: 'Shopping' },
           ].map((item) => {
             const IconComponent = item.icon;
             return (
