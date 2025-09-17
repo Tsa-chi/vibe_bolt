@@ -365,4 +365,5 @@ function App() {
           </button>
         </div>
         <p className="text-xs text-purple-200 mt-4 text-center">
-          *
+          *Results may vary based on individual factors
+        </p>
