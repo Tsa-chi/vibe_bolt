@@ -4,7 +4,8 @@ import {
   Plus, BarChart3, Award, Users, Settings, Camera, Target, 
   TrendingUp, Calendar, CheckCircle, Heart, Scale, Activity,
   Apple, Zap, Trophy, Star, Bell, Shield, ChevronRight,
-  PlayCircle, BookOpen, Scan, Clock, MapPin
+  PlayCircle, BookOpen, Scan, Clock, MapPin, Menu, X,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 
 type MenuItem = 'dashboard' | 'profile' | 'macros' | 'exercise' | 'meals' | 'shopping' | 'food-input' | 'exercise-input' | 'health' | 'analysis' | 'rewards' | 'community' | 'settings';
@@ -16,6 +17,8 @@ interface DashboardStats {
   caloriesConsumed: number;
   exerciseMinutes: number;
   exerciseGoal: number;
+  bloodPressure: { systolic: number; diastolic: number };
+  bloodSugar: number;
 }
 
 interface MacroGoals {
@@ -25,15 +28,37 @@ interface MacroGoals {
   fat: number;
 }
 
+interface MealPlan {
+  id: string;
+  name: string;
+  duration: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  meals: {
+    breakfast: string[];
+    lunch: string[];
+    dinner: string[];
+    snacks: string[];
+  };
+}
+
 function App() {
   const [activeMenu, setActiveMenu] = useState<MenuItem>('dashboard');
-  const [userStats] = useState<DashboardStats>({
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedMealPlan, setSelectedMealPlan] = useState<MealPlan | null>(null);
+  const [shoppingList, setShoppingList] = useState<{item: string; checked: boolean; category: string}[]>([]);
+  
+  const [userStats, setUserStats] = useState<DashboardStats>({
     currentWeight: 75,
     goalWeight: 65,
     dailyCalories: 1800,
     caloriesConsumed: 1200,
     exerciseMinutes: 30,
-    exerciseGoal: 45
+    exerciseGoal: 45,
+    bloodPressure: { systolic: 125, diastolic: 82 },
+    bloodSugar: 95
   });
 
   const [macroGoals] = useState<MacroGoals>({
@@ -59,82 +84,206 @@ function App() {
     { id: 'settings' as MenuItem, icon: Settings, label: 'Settings', color: 'text-gray-600' },
   ];
 
+  const mealPlans: MealPlan[] = [
+    {
+      id: '1day-plan1',
+      name: 'Quick Start',
+      duration: '1 Day',
+      calories: 1800,
+      protein: 135,
+      carbs: 180,
+      fat: 60,
+      meals: {
+        breakfast: ['Oatmeal with berries', 'Greek yogurt', 'Green tea'],
+        lunch: ['Grilled chicken salad', 'Quinoa', 'Olive oil dressing'],
+        dinner: ['Baked salmon', 'Steamed broccoli', 'Sweet potato'],
+        snacks: ['Apple with almond butter', 'Protein shake']
+      }
+    },
+    {
+      id: '1day-plan2',
+      name: 'Mediterranean',
+      duration: '1 Day',
+      calories: 1750,
+      protein: 130,
+      carbs: 175,
+      fat: 65,
+      meals: {
+        breakfast: ['Greek yogurt parfait', 'Whole grain toast', 'Fresh fruit'],
+        lunch: ['Mediterranean bowl', 'Hummus', 'Pita bread'],
+        dinner: ['Grilled fish', 'Roasted vegetables', 'Brown rice'],
+        snacks: ['Mixed nuts', 'Herbal tea']
+      }
+    }
+  ];
+
+  const getHealthColor = (type: string, value: number | { systolic: number; diastolic: number }) => {
+    switch (type) {
+      case 'weight':
+        const weightValue = value as number;
+        if (weightValue <= userStats.goalWeight + 2) return 'text-green-600 bg-green-50';
+        if (weightValue <= userStats.goalWeight + 5) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50';
+      
+      case 'bloodPressure':
+        const bp = value as { systolic: number; diastolic: number };
+        if (bp.systolic < 120 && bp.diastolic < 80) return 'text-green-600 bg-green-50';
+        if (bp.systolic < 140 && bp.diastolic < 90) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50';
+      
+      case 'bloodSugar':
+        const sugar = value as number;
+        if (sugar >= 70 && sugar <= 100) return 'text-green-600 bg-green-50';
+        if (sugar >= 100 && sugar <= 125) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50';
+      
+      default:
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const generateShoppingList = (plan: MealPlan) => {
+    const items = [
+      // From breakfast
+      { item: 'Oats', checked: false, category: 'Grains' },
+      { item: 'Berries', checked: false, category: 'Produce' },
+      { item: 'Greek Yogurt', checked: false, category: 'Dairy' },
+      // From lunch
+      { item: 'Chicken Breast', checked: false, category: 'Proteins' },
+      { item: 'Mixed Greens', checked: false, category: 'Produce' },
+      { item: 'Quinoa', checked: false, category: 'Grains' },
+      // From dinner
+      { item: 'Salmon Fillet', checked: false, category: 'Proteins' },
+      { item: 'Broccoli', checked: false, category: 'Produce' },
+      { item: 'Sweet Potato', checked: false, category: 'Produce' },
+      // Snacks
+      { item: 'Apples', checked: false, category: 'Produce' },
+      { item: 'Almond Butter', checked: false, category: 'Pantry' },
+      { item: 'Protein Powder', checked: false, category: 'Supplements' }
+    ];
+    setShoppingList(items);
+  };
+
+  const toggleShoppingItem = (index: number) => {
+    setShoppingList(prev => prev.map((item, i) => 
+      i === index ? { ...item, checked: !item.checked } : item
+    ));
+  };
+
   const renderDashboard = () => (
-    <div className="space-y-6">
-      {/* AI Photo Feature */}
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold mb-2">See Your Future Self</h3>
-            <p className="text-purple-100 mb-4">AI-generated visualization of you 10kg slimmer</p>
-            <button className="bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold hover:bg-purple-50 transition-colors flex items-center gap-2">
-              <Camera className="w-4 h-4" />
-              Generate Photo
-            </button>
+    <div className="space-y-6 pb-24">
+      {/* AI Photo Feature - Thumb-friendly */}
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Camera className="w-8 h-8" />
           </div>
-          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-            <Camera className="w-10 h-10" />
-          </div>
+          <h3 className="text-xl font-bold mb-2">See Your Future Self</h3>
+          <p className="text-purple-100 mb-6">AI-generated visualization of you 10kg slimmer</p>
+          <button className="w-full bg-white text-purple-600 py-4 rounded-xl font-semibold text-lg hover:bg-purple-50 transition-colors">
+            Generate Photo
+          </button>
         </div>
-        <p className="text-xs text-purple-200 mt-4">
-          *AI-generated images are for visualization purposes only and may not accurately represent actual results.
+        <p className="text-xs text-purple-200 mt-4 text-center">
+          *AI-generated images are for visualization purposes only
         </p>
       </div>
 
+      {/* Health Metrics - Color Coded */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Heart className="w-5 h-5 text-red-500" />
+          Health Overview
+        </h3>
+        <div className="space-y-4">
+          <div className={`p-4 rounded-xl ${getHealthColor('weight', userStats.currentWeight)}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Scale className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">Weight</p>
+                  <p className="text-sm opacity-75">Goal: {userStats.goalWeight}kg</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold">{userStats.currentWeight}kg</p>
+                <button className="text-sm underline mt-1">Update</button>
+              </div>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-xl ${getHealthColor('bloodPressure', userStats.bloodPressure)}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Activity className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">Blood Pressure</p>
+                  <p className="text-sm opacity-75">mmHg</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold">{userStats.bloodPressure.systolic}/{userStats.bloodPressure.diastolic}</p>
+                <button className="text-sm underline mt-1">Update</button>
+              </div>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-xl ${getHealthColor('bloodSugar', userStats.bloodSugar)}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Target className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">Blood Sugar</p>
+                  <p className="text-sm opacity-75">mg/dL</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold">{userStats.bloodSugar}</p>
+                <button className="text-sm underline mt-1">Update</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <Scale className="w-6 h-6 text-blue-600" />
-            <span className="text-xs text-gray-500">Current</span>
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{userStats.currentWeight}kg</p>
-          <p className="text-sm text-gray-600">Goal: {userStats.goalWeight}kg</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <Apple className="w-6 h-6 text-green-600" />
-            <span className="text-xs text-gray-500">Calories</span>
-          </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl p-6 shadow-lg text-center">
+          <Apple className="w-8 h-8 text-green-600 mx-auto mb-3" />
           <p className="text-2xl font-bold text-gray-900">{userStats.caloriesConsumed}</p>
-          <p className="text-sm text-gray-600">of {userStats.dailyCalories}</p>
+          <p className="text-sm text-gray-600">of {userStats.dailyCalories} cal</p>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <Activity className="w-6 h-6 text-red-600" />
-            <span className="text-xs text-gray-500">Exercise</span>
-          </div>
+        <div className="bg-white rounded-2xl p-6 shadow-lg text-center">
+          <Activity className="w-8 h-8 text-red-600 mx-auto mb-3" />
           <p className="text-2xl font-bold text-gray-900">{userStats.exerciseMinutes}min</p>
           <p className="text-sm text-gray-600">of {userStats.exerciseGoal}min</p>
         </div>
+      </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <Target className="w-6 h-6 text-purple-600" />
-            <span className="text-xs text-gray-500">Progress</span>
+      {/* Shopping List Quick Access */}
+      {shoppingList.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-teal-600" />
+              Shopping List
+            </h3>
+            <span className="text-sm text-gray-500">
+              {shoppingList.filter(item => item.checked).length}/{shoppingList.length} items
+            </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {Math.round(((userStats.currentWeight - userStats.goalWeight) / (userStats.currentWeight - userStats.goalWeight)) * 100)}%
-          </p>
-          <p className="text-sm text-gray-600">to goal</p>
+          <button 
+            onClick={() => setActiveMenu('shopping')}
+            className="w-full bg-teal-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-teal-700 transition-colors"
+          >
+            View Shopping List
+          </button>
         </div>
-      </div>
-
-      {/* Progress Chart */}
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-blue-600" />
-          Weight Progress
-        </h3>
-        <div className="h-40 bg-gray-50 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">Weight tracking chart will appear here</p>
-        </div>
-      </div>
+      )}
 
       {/* Daily Tips */}
-      <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 text-white">
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <Zap className="w-5 h-5" />
           Today's Tip
@@ -146,523 +295,203 @@ function App() {
     </div>
   );
 
-  const renderProfile = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="25" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="170" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Weight (kg)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="75" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Goal Weight (kg)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="65" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Body Measurements (Optional)</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Waist (cm)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Chest (cm)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Hips (cm)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-blue-600" />
-          Privacy & Security
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span>Data Encryption</span>
-            <span className="text-green-600 font-medium">Enabled</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Photo Processing</span>
-            <span className="text-green-600 font-medium">Secure</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Data Sharing</span>
-            <button className="text-blue-600 hover:text-blue-700">Manage</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderMacros = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Daily Macro Goals</h3>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Calories</span>
-                <span className="text-blue-600 font-bold">{macroGoals.calories}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div className="bg-blue-500 h-3 rounded-full" style={{ width: '67%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Protein (g)</span>
-                <span className="text-green-600 font-bold">{macroGoals.protein}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div className="bg-green-500 h-3 rounded-full" style={{ width: '45%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Carbs (g)</span>
-                <span className="text-orange-600 font-bold">{macroGoals.carbs}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div className="bg-orange-500 h-3 rounded-full" style={{ width: '78%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Fat (g)</span>
-                <span className="text-purple-600 font-bold">{macroGoals.fat}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div className="bg-purple-500 h-3 rounded-full" style={{ width: '52%' }}></div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-semibold mb-3">Understanding Macros</h4>
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>Protein:</strong> Builds and repairs muscle tissue</p>
-              <p><strong>Carbs:</strong> Primary energy source for your body</p>
-              <p><strong>Fat:</strong> Essential for hormone production and nutrient absorption</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Adjust Goals</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
-            <input type="date" className="w-full p-3 border border-gray-300 rounded-lg" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Special Event</label>
-            <input type="text" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="Wedding, vacation, etc." />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderMeals = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Weekly Meal Plan</h3>
-        <div className="grid md:grid-cols-7 gap-2 mb-4">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-            <div key={day} className="text-center p-2 bg-gray-50 rounded-lg">
-              <span className="font-medium text-sm">{day}</span>
+    <div className="space-y-6 pb-24">
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 className="text-xl font-semibold mb-6 text-center">Create Your Meal Plan</h3>
+        
+        {!selectedMealPlan ? (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h4 className="text-lg font-medium mb-4">Choose Duration</h4>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {['1 Day', '3 Days', '1 Week', '2 Weeks', '1 Month'].map(duration => (
+                  <button key={duration} className="p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                    <span className="font-medium">{duration}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="space-y-4">
-          {['Breakfast', 'Lunch', 'Dinner', 'Snacks'].map(meal => (
-            <div key={meal} className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold mb-2">{meal}</h4>
-              <p className="text-gray-600 text-sm">Click to plan your {meal.toLowerCase()}</p>
+
+            <div>
+              <h4 className="text-lg font-medium mb-4 text-center">Available Plans (1 Day)</h4>
+              <div className="space-y-4">
+                {mealPlans.map(plan => (
+                  <div key={plan.id} className="border-2 border-gray-200 rounded-xl p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h5 className="font-semibold text-lg">{plan.name}</h5>
+                        <p className="text-sm text-gray-600">{plan.duration}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-blue-600">{plan.calories} cal</p>
+                        <p className="text-xs text-gray-500">P:{plan.protein}g C:{plan.carbs}g F:{plan.fat}g</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedMealPlan(plan)}
+                      className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Select Plan
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-blue-50 rounded-xl p-4">
+              <h4 className="font-semibold text-blue-900 mb-2">Selected: {selectedMealPlan.name}</h4>
+              <p className="text-blue-700 text-sm mb-3">{selectedMealPlan.duration} • {selectedMealPlan.calories} calories</p>
+              <div className="flex justify-between text-sm text-blue-600">
+                <span>Protein: {selectedMealPlan.protein}g</span>
+                <span>Carbs: {selectedMealPlan.carbs}g</span>
+                <span>Fat: {selectedMealPlan.fat}g</span>
+              </div>
+            </div>
 
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-6 text-white">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Star className="w-5 h-5" />
-          Cheat Meal Planner
-        </h3>
-        <p className="text-yellow-100 mb-4">Plan your weekly treat without guilt!</p>
-        <button className="bg-white text-orange-600 px-4 py-2 rounded-lg font-semibold hover:bg-orange-50 transition-colors">
-          Plan Cheat Meal
-        </button>
-        <p className="text-xs text-yellow-200 mt-3">
-          Occasional indulgences are part of a balanced lifestyle and can help you stay on track long-term.
-        </p>
-      </div>
+            <div className="space-y-4">
+              {Object.entries(selectedMealPlan.meals).map(([mealType, items]) => (
+                <div key={mealType} className="border border-gray-200 rounded-xl p-4">
+                  <h5 className="font-semibold capitalize mb-3 text-lg">{mealType}</h5>
+                  <ul className="space-y-2">
+                    {items.map((item, index) => (
+                      <li key={index} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Dietary Preferences</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Mediterranean', 'Low-Carb'].map(diet => (
-            <label key={diet} className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded" />
-              <span className="text-sm">{diet}</span>
-            </label>
-          ))}
-        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setSelectedMealPlan(null)}
+                className="py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Change Plan
+              </button>
+              <button 
+                onClick={() => {
+                  generateShoppingList(selectedMealPlan);
+                  setActiveMenu('shopping');
+                }}
+                className="py-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
+              >
+                Create Shopping List
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
   const renderShopping = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Shopping List</h3>
-          <select className="p-2 border border-gray-300 rounded-lg">
-            <option>1 Day</option>
-            <option>3 Days</option>
-            <option>1 Week</option>
-          </select>
+    <div className="space-y-6 pb-24">
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold">Shopping List</h3>
+          {selectedMealPlan && (
+            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+              {selectedMealPlan.name}
+            </span>
+          )}
         </div>
         
-        <div className="space-y-4">
-          {['Produce', 'Proteins', 'Dairy', 'Grains', 'Pantry'].map(section => (
-            <div key={section} className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-gray-500" />
-                {section}
-              </h4>
-              <div className="space-y-2">
-                {['Item 1', 'Item 2', 'Item 3'].map(item => (
-                  <label key={item} className="flex items-center space-x-2">
-                    <input type="checkbox" className="rounded" />
-                    <span className="text-sm">{item}</span>
-                    <span className="text-xs text-gray-500 ml-auto">2x</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderFoodInput = () => (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold mb-4">Quick Add from Plan</h3>
-          <div className="space-y-3">
-            {['Breakfast: Oatmeal with berries', 'Lunch: Grilled chicken salad', 'Snack: Greek yogurt'].map(item => (
-              <label key={item} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <input type="checkbox" className="rounded" />
-                <span className="text-sm flex-1">{item}</span>
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              </label>
-            ))}
+        {shoppingList.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-6">No shopping list created yet</p>
+            <button 
+              onClick={() => setActiveMenu('meals')}
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
+            >
+              Create Meal Plan First
+            </button>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold mb-4">Manual Entry</h3>
+        ) : (
           <div className="space-y-4">
-            <input 
-              type="text" 
-              placeholder="Search food..." 
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-            <button className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-              <Scan className="w-4 h-4" />
-              Scan Barcode
-            </button>
-          </div>
-        </div>
-      </div>
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-sm text-gray-600">
+                {shoppingList.filter(item => item.checked).length} of {shoppingList.length} completed
+              </span>
+              <div className="flex gap-2">
+                <button className="text-sm text-blue-600 hover:text-blue-700 px-3 py-1 border border-blue-200 rounded-lg">
+                  Export
+                </button>
+                <button className="text-sm text-green-600 hover:text-green-700 px-3 py-1 border border-green-200 rounded-lg">
+                  Share
+                </button>
+              </div>
+            </div>
 
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Recent & Favorites</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {['Apple', 'Chicken Breast', 'Brown Rice', 'Almonds', 'Salmon', 'Broccoli'].map(food => (
-            <button key={food} className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
-              <span className="font-medium">{food}</span>
-              <p className="text-xs text-gray-500">Tap to add</p>
-            </button>
-          ))}
-        </div>
+            {['Produce', 'Proteins', 'Dairy', 'Grains', 'Pantry', 'Supplements'].map(category => {
+              const categoryItems = shoppingList.filter(item => item.category === category);
+              if (categoryItems.length === 0) return null;
+              
+              return (
+                <div key={category} className="border border-gray-200 rounded-xl p-4">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2 text-lg">
+                    <MapPin className="w-5 h-5 text-gray-500" />
+                    {category}
+                  </h4>
+                  <div className="space-y-3">
+                    {categoryItems.map((item, index) => {
+                      const globalIndex = shoppingList.findIndex(i => i === item);
+                      return (
+                        <label key={index} className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="w-5 h-5 rounded" 
+                            checked={item.checked}
+                            onChange={() => toggleShoppingItem(globalIndex)}
+                          />
+                          <span className={`flex-1 text-lg ${item.checked ? 'line-through text-gray-500' : ''}`}>
+                            {item.item}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 
-  const renderExercise = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Weekly Exercise Plan</h3>
-        <div className="grid md:grid-cols-7 gap-2 mb-6">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-            <div key={day} className="text-center p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium text-sm block">{day}</span>
-              <span className="text-xs text-gray-500">Rest</span>
-            </div>
-          ))}
-        </div>
-        
+  // Simplified versions of other render functions for space
+  const renderProfile = () => (
+    <div className="space-y-6 pb-24">
+      <div className="bg-white rounded-2xl p-6 shadow-lg">
+        <h3 className="text-xl font-semibold mb-6 text-center">Personal Information</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <PlayCircle className="w-6 h-6 text-blue-600" />
-              <div>
-                <h4 className="font-semibold">Cardio Workout</h4>
-                <p className="text-sm text-gray-600">30 minutes</p>
-              </div>
-            </div>
-            <button className="text-blue-600 hover:text-blue-700">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Dumbbell className="w-6 h-6 text-red-600" />
-              <div>
-                <h4 className="font-semibold">Strength Training</h4>
-                <p className="text-sm text-gray-600">45 minutes</p>
-              </div>
-            </div>
-            <button className="text-blue-600 hover:text-blue-700">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-green-600" />
-          Video Tutorials
-        </h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          {['Beginner Yoga', 'HIIT Workout', 'Strength Training', 'Stretching'].map(video => (
-            <div key={video} className="relative bg-gray-100 rounded-lg p-4 hover:bg-gray-200 cursor-pointer">
-              <PlayCircle className="w-8 h-8 text-blue-600 mb-2" />
-              <h4 className="font-medium">{video}</h4>
-              <p className="text-sm text-gray-600">15 min</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderHealth = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Daily Health Tracking</h3>
-        <div className="grid md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="75.0" />
+            <label className="block text-lg font-medium text-gray-700 mb-3">Age</label>
+            <input type="number" className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl" placeholder="25" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Blood Pressure</label>
-            <input type="text" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="120/80" />
+            <label className="block text-lg font-medium text-gray-700 mb-3">Height (cm)</label>
+            <input type="number" className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl" placeholder="170" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Blood Sugar</label>
-            <input type="number" className="w-full p-3 border border-gray-300 rounded-lg" placeholder="90" />
+            <label className="block text-lg font-medium text-gray-700 mb-3">Current Weight (kg)</label>
+            <input type="number" className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl" placeholder="75" />
+          </div>
+          <div>
+            <label className="block text-lg font-medium text-gray-700 mb-3">Goal Weight (kg)</label>
+            <input type="number" className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl" placeholder="65" />
           </div>
         </div>
-        <button className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-          Save Today's Data
+        <button className="w-full mt-6 bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors">
+          Save Changes
         </button>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Progress Graphs</h3>
-        <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-          <p className="text-gray-500">Health tracking charts will appear here</p>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Bell className="w-5 h-5 text-blue-600" />
-          Daily Reminders
-        </h3>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-2">
-            <input type="checkbox" className="rounded" defaultChecked />
-            <span className="text-sm">Morning weigh-in (8:00 AM)</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input type="checkbox" className="rounded" defaultChecked />
-            <span className="text-sm">Evening health check (8:00 PM)</span>
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAnalysis = () => (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Weekly Analysis</h3>
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-600" />
-            AI-Generated Insights
-          </h4>
-          <div className="space-y-3 text-sm">
-            <p><strong>Most Significant Factor:</strong> Your consistent morning workouts contributed to 70% of your weekly progress.</p>
-            <p><strong>Improvement Area:</strong> Consider increasing protein intake by 15g daily to optimize muscle recovery.</p>
-            <p><strong>Plateau Prevention:</strong> Your body may adapt to current routine in 2 weeks. We'll suggest variations then.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Personalized Recommendations</h3>
-        <div className="space-y-4">
-          <div className="border-l-4 border-green-500 pl-4">
-            <h4 className="font-medium text-green-700">Nutrition Adjustment</h4>
-            <p className="text-sm text-gray-600">Based on your progress, consider adding 200 calories on workout days.</p>
-          </div>
-          <div className="border-l-4 border-blue-500 pl-4">
-            <h4 className="font-medium text-blue-700">Exercise Variation</h4>
-            <p className="text-sm text-gray-600">Try incorporating resistance bands to challenge your muscles differently.</p>
-          </div>
-          <div className="border-l-4 border-purple-500 pl-4">
-            <h4 className="font-medium text-purple-700">Recovery Focus</h4>
-            <p className="text-sm text-gray-600">Your sleep quality affects 40% of your results. Aim for 7-8 hours nightly.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Weekly Questionnaire</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">How was your energy level this week?</label>
-            <select className="w-full p-3 border border-gray-300 rounded-lg">
-              <option>Very High</option>
-              <option>High</option>
-              <option>Moderate</option>
-              <option>Low</option>
-              <option>Very Low</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Any challenges faced?</label>
-            <textarea className="w-full p-3 border border-gray-300 rounded-lg" rows={3} placeholder="Share your experience..."></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderRewards = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-6 text-white">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Trophy className="w-6 h-6" />
-          Current Status
-        </h3>
-        <div className="grid md:grid-cols-3 gap-4 mt-4">
-          <div className="text-center">
-            <p className="text-2xl font-bold">1,250</p>
-            <p className="text-yellow-100">Points Earned</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">7</p>
-            <p className="text-yellow-100">Badges</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">Gold</p>
-            <p className="text-yellow-100">Current Tier</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Available Rewards</h3>
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            { name: 'Healthy Recipe Book', points: 500, available: true },
-            { name: '20% Off Supplements', points: 750, available: true },
-            { name: 'Personal Trainer Session', points: 1000, available: false },
-            { name: 'Premium Features (1 Month)', points: 1200, available: false }
-          ].map(reward => (
-            <div key={reward.name} className={`p-4 border rounded-lg ${reward.available ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
-              <h4 className="font-medium">{reward.name}</h4>
-              <p className="text-sm text-gray-600">{reward.points} points</p>
-              <button 
-                className={`mt-2 px-4 py-2 rounded-lg text-sm font-medium ${
-                  reward.available 
-                    ? 'bg-green-600 text-white hover:bg-green-700' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-                disabled={!reward.available}
-              >
-                {reward.available ? 'Redeem' : 'Locked'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl p-6 shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">Achievements</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {[
-            { name: 'First Week', icon: '🎯', earned: true },
-            { name: 'Consistency King', icon: '👑', earned: true },
-            { name: 'Macro Master', icon: '🥗', earned: false },
-            { name: 'Exercise Expert', icon: '💪', earned: false },
-            { name: 'Goal Crusher', icon: '🏆', earned: false },
-            { name: 'Community Helper', icon: '🤝', earned: false }
-          ].map(achievement => (
-            <div key={achievement.name} className={`text-center p-4 rounded-lg ${achievement.earned ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50 border border-gray-200'}`}>
-              <div className="text-3xl mb-2">{achievement.icon}</div>
-              <h4 className={`font-medium ${achievement.earned ? 'text-yellow-700' : 'text-gray-500'}`}>
-                {achievement.name}
-              </h4>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-purple-50 rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Users className="w-5 h-5 text-purple-600" />
-          Referral Program
-        </h3>
-        <p className="text-gray-600 mb-4">Invite friends and earn rewards together!</p>
-        <div className="flex gap-4">
-          <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-            Invite Friends
-          </button>
-          <div className="text-sm text-purple-600">
-            <p>Successful referrals: <strong>2</strong></p>
-            <p>Bonus earned: <strong>1 month free</strong></p>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -671,80 +500,105 @@ function App() {
     switch (activeMenu) {
       case 'dashboard': return renderDashboard();
       case 'profile': return renderProfile();
-      case 'macros': return renderMacros();
-      case 'exercise': return renderExercise();
       case 'meals': return renderMeals();
       case 'shopping': return renderShopping();
-      case 'food-input': return renderFoodInput();
-      case 'health': return renderHealth();
-      case 'analysis': return renderAnalysis();
-      case 'rewards': return renderRewards();
       default: return renderDashboard();
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+      {/* Mobile-First Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="px-4 py-4">
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <Scale className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-xl font-bold text-gray-900">Me but better</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <button className="p-2 text-gray-400 hover:text-gray-600">
-                <Bell className="w-5 h-5" />
-              </button>
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar */}
-          <div className="w-64 flex-shrink-0">
-            <nav className="space-y-2">
-              {menuItems.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveMenu(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg transition-colors ${
-                      activeMenu === item.id
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <IconComponent className={`w-5 h-5 ${activeMenu === item.id ? 'text-blue-600' : item.color}`} />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Subscription Prompt */}
-            <div className="mt-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white">
-              <h3 className="font-semibold mb-2">Upgrade to Premium</h3>
-              <p className="text-sm text-purple-100 mb-3">Unlock AI photo generation, advanced analytics, and more!</p>
-              <button className="w-full bg-white text-purple-600 py-2 rounded-lg font-medium hover:bg-purple-50 transition-colors">
-                Try Free
+      {/* Slide-out Menu */}
+      <div className={`fixed inset-0 z-40 transition-opacity ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsMenuOpen(false)}></div>
+        <div className={`absolute right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Menu</h2>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 rounded-lg"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
+          <nav className="p-4 space-y-2 overflow-y-auto h-full pb-32">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveMenu(item.id);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-4 px-4 py-4 text-left rounded-xl transition-colors ${
+                    activeMenu === item.id
+                      ? 'bg-blue-50 text-blue-700 border-2 border-blue-200'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <IconComponent className={`w-6 h-6 ${activeMenu === item.id ? 'text-blue-600' : item.color}`} />
+                  <span className="font-medium text-lg">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {renderContent()}
-          </div>
+      {/* Main Content */}
+      <div className="px-4 py-6">
+        {renderContent()}
+      </div>
+
+      {/* Bottom Navigation - Thumb Zone */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 safe-area-pb">
+        <div className="flex justify-around items-center">
+          {[
+            { id: 'dashboard', icon: Home, label: 'Home' },
+            { id: 'meals', icon: UtensilsCrossed, label: 'Meals' },
+            { id: 'food-input', icon: Plus, label: 'Add Food' },
+            { id: 'shopping', icon: ShoppingCart, label: 'Shopping' },
+            { id: 'profile', icon: User, label: 'Profile' }
+          ].map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveMenu(item.id as MenuItem)}
+                className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-colors ${
+                  activeMenu === item.id
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <IconComponent className="w-6 h-6" />
+                <span className="text-xs font-medium">{item.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
