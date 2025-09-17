@@ -86,6 +86,8 @@ function App() {
   const [selectedWorkoutPlan, setSelectedWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1 Day');
+  const [newShoppingItem, setNewShoppingItem] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Other');
   
   const [userStats, setUserStats] = useState<DashboardStats>({
     currentWeight: 75,
@@ -323,6 +325,22 @@ function App() {
     setShoppingList([]);
     setSelectedMealPlan(null);
     // Show success message or redirect to meals
+  const addManualShoppingItem = () => {
+    if (newShoppingItem.trim()) {
+      const newItem = {
+        item: newShoppingItem.trim(),
+        checked: false,
+        category: selectedCategory
+      };
+      setShoppingList(prev => [...prev, newItem]);
+      setNewShoppingItem('');
+    }
+  };
+
+  const removeShoppingItem = (index: number) => {
+    setShoppingList(prev => prev.filter((_, i) => i !== index));
+  };
+
     setActiveMenu('meals');
   };
   const toggleExerciseComplete = (exerciseId: string) => {
@@ -703,13 +721,16 @@ function App() {
         {shoppingList.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-6">No shopping list created yet</p>
-            <button 
-              onClick={() => setActiveMenu('meals')}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
-            >
-              Create Meal Plan First
-            </button>
+            <p className="text-gray-500 mb-6">No items in your shopping list</p>
+            <div className="space-y-4">
+              <button 
+                onClick={() => setActiveMenu('meals')}
+                className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors"
+              >
+                Generate from Meal Plan
+              </button>
+              <p className="text-gray-400 text-sm">or add items manually below</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -768,6 +789,15 @@ function App() {
                           <span className={`flex-1 text-lg ${item.checked ? 'line-through text-gray-500' : ''}`}>
                             {item.item}
                           </span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              removeShoppingItem(globalIndex);
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
                         </label>
                       );
                     })}
@@ -793,6 +823,49 @@ function App() {
             )}
           </div>
         )}
+
+        {/* Manual Add Section */}
+        <div className="mt-6 border-t border-gray-200 pt-6">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-blue-600" />
+            Add Item Manually
+          </h4>
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={newShoppingItem}
+                onChange={(e) => setNewShoppingItem(e.target.value)}
+                placeholder="Enter item name..."
+                className="flex-1 p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
+                onKeyPress={(e) => e.key === 'Enter' && addManualShoppingItem()}
+              />
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="p-4 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
+              >
+                <option value="Produce">Produce</option>
+                <option value="Proteins">Proteins</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Grains">Grains</option>
+                <option value="Bakery">Bakery</option>
+                <option value="Pantry">Pantry</option>
+                <option value="Refrigerated">Refrigerated</option>
+                <option value="Beverages">Beverages</option>
+                <option value="Supplements">Supplements</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <button
+              onClick={addManualShoppingItem}
+              disabled={!newShoppingItem.trim()}
+              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Add to List
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
