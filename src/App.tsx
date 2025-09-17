@@ -28,6 +28,20 @@ interface MacroGoals {
   fat: number;
 }
 
+interface AnalysisData {
+  period: string;
+  totalCalories: number;
+  avgDailyCalories: number;
+  macroBreakdown: {
+    protein: { amount: number; percentage: number };
+    carbs: { amount: number; percentage: number };
+    fat: { amount: number; percentage: number };
+  };
+  nutritionScore: number;
+  adherenceRate: number;
+  weightProgress: number;
+  exerciseCompliance: number;
+}
 interface MealPlan {
   id: string;
   name: string;
@@ -71,6 +85,7 @@ function App() {
   const [shoppingList, setShoppingList] = useState<{item: string; checked: boolean; category: string}[]>([]);
   const [selectedWorkoutPlan, setSelectedWorkoutPlan] = useState<WorkoutPlan | null>(null);
   const [completedExercises, setCompletedExercises] = useState<string[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('1 Day');
   
   const [userStats, setUserStats] = useState<DashboardStats>({
     currentWeight: 75,
